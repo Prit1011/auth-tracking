@@ -753,12 +753,65 @@ app.post('/api/users', authMiddleware, async (req, res) => {
 
 app.get('/api/users', authMiddleware, async (req, res) => {
   try {
-    const users = await User.find({ adminId: req.adminId }).sort({ createdAt: -1 });
+    const { accountType, search } = req.query;
+
+    // Build filter object
+    let matchStage = { adminId: req.adminId };
+
+    if (accountType && accountType.trim()) {
+      matchStage.accountType = accountType.trim();
+    }
+
+    if (search && search.trim()) {
+      const searchRegex = new RegExp(search.trim(), 'i');
+      matchStage.$or = [
+        { firstName: searchRegex },
+        { secondName: searchRegex },
+        { mobileNumber: searchRegex }
+      ];
+    }
+
+    // Aggregation pipeline
+    const users = await User.aggregate([
+      { $match: matchStage },
+      { $sort: { createdAt: -1 } },
+
+      // Lookup installments and count paid ones
+      {
+        $lookup: {
+          from: 'installments', // MongoDB collection name (lowercase plural)
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'installments'
+        }
+      },
+      {
+        $addFields: {
+          paidCount: {
+            $size: {
+              $filter: {
+                input: '$installments',
+                as: 'inst',
+                cond: { $eq: ['$$inst.paid', true] }
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          installments: 0 // Hide full installments array from response
+        }
+      }
+    ]);
+
     return res.json(users);
   } catch (e) {
+    console.error(e);
     return res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
+
 
 app.get('/api/users/:id', authMiddleware, async (req, res) => {
   try {
@@ -878,57 +931,149 @@ app.get('/api/reports/installments', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Provide ?month=August&year=2025' });
     }
     const y = Number(year);
-    const users = await User.find({ adminId: req.adminId }).select('_id firstName secondName mobileNumber accountType accountNumber1 cifNumber1');
+    
+    // Find all installments for the specified month and year with user details
+    const installments = await Installment.find({ 
+      month, 
+      year: y 
+    }).populate('userId', 'firstName secondName mobileNumber monthlyAmount').lean();
+
+    // Filter installments to only those belonging to the admin's users
+    const users = await User.find({ adminId: req.adminId }).select('_id');
     const userIdSet = new Set(users.map(u => String(u._id)));
-
-    const records = await Installment.find({ month, year: y }).populate('userId').lean();
-    const myRecords = records.filter(r => r.userId && userIdSet.has(String(r.userId._id)));
-    myRecords.sort((a, b) => (a.userId.firstName || '').localeCompare(b.userId.firstName || ''));
-
-    const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet(`Report ${month}-${year}`);
-
-    ws.addRow([
-      '#','User Name','Mobile','Account Type','Month','Year','Amount','Paid','Paid On','Account No. 1','CIF No. 1'
-    ]);
-
-    let idx = 1;
-    let totalAmount = 0;
-    let totalPaid = 0;
-
-    for (const r of myRecords) {
-      const u = r.userId || {};
-      const paidOn = r.paid ? new Date(r.updatedAt).toLocaleDateString() : '';
-      ws.addRow([
-        idx++,
-        `${u.firstName || ''} ${u.secondName || ''}`.trim(),
-        u.mobileNumber || '',
-        u.accountType || '',
-        r.month,
-        r.year,
-        r.amount || 0,
-        r.paid ? 'Yes' : 'No',
-        paidOn,
-        u.accountNumber1 || '',
-        u.cifNumber1 || '',
-      ]);
-      totalAmount += r.amount || 0;
-      if (r.paid) totalPaid += r.amount || 0;
+    const myRecords = installments.filter(r => r.userId && userIdSet.has(String(r.userId._id)));
+    
+    if (myRecords.length === 0) {
+      return res.status(404).json({ error: 'No installments found for the specified month and year' });
     }
 
-    const totalsRow = ws.addRow(['','Totals','','','','', totalAmount, `Collected: ${totalPaid}`, '', '', '']);
-    totalsRow.font = { bold: true };
+    // Sort by user first name
+    myRecords.sort((a, b) => (a.userId.firstName || '').localeCompare(b.userId.firstName || ''));
 
-    // Basic styling
-    ws.columns.forEach((col) => { col.alignment = { vertical: 'middle', horizontal: 'center' }; col.width = Math.max(col.width || 15, 15); });
-    ws.getRow(1).font = { bold: true };
-    ws.getRow(1).height = 22;
-    ws.views = [{ state: 'frozen', ySplit: 1 }];
+    // Create a new workbook and worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet(`Installments ${month} ${year}`);
 
+    // Define columns with the desired layout
+    worksheet.columns = [
+      { header: 'S.No', key: 'sno', width: 8 },
+      { header: 'First Name', key: 'firstName', width: 15 },
+      { header: 'Second Name', key: 'secondName', width: 15 },
+      { header: 'Monthly Amount', key: 'monthlyAmount', width: 15 },
+      { header: 'Installment Amount', key: 'installmentAmount', width: 20 },
+      { header: 'Payment Status', key: 'paymentStatus', width: 18 },
+      { header: 'Last Updated', key: 'lastUpdated', width: 20 },
+      { header: 'Installment Month', key: 'month', width: 15 },
+      { header: 'Installment Year', key: 'year', width: 15 },
+    ];
+
+    // Style the header row
+    worksheet.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: '366092' }
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
+
+    // Calculate totals
+    let totalMonthlyAmount = 0;
+    let totalInstallmentAmount = 0;
+    let totalPaidAmount = 0;
+
+    // Add data rows and calculate totals
+    myRecords.forEach((record, index) => {
+      const user = record.userId || {};
+      const monthlyAmount = user.monthlyAmount || 0;
+      const installmentAmount = record.amount || 0;
+      
+      totalMonthlyAmount += monthlyAmount;
+      totalInstallmentAmount += installmentAmount;
+      if (record.paid) {
+        totalPaidAmount += installmentAmount;
+      }
+
+      const row = worksheet.addRow({
+        sno: index + 1,
+        firstName: user.firstName || '',
+        secondName: user.secondName || '',
+        monthlyAmount: monthlyAmount,
+        installmentAmount: installmentAmount,
+        paymentStatus: record.paid ? 'Paid' : 'Pending',
+        lastUpdated: record.updatedAt ? new Date(record.updatedAt).toLocaleString() : '',
+        month: record.month,
+        year: record.year,
+      });
+
+      // Style data rows
+      row.eachCell((cell, cellNumber) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+
+        // Color coding for payment status
+        if (cellNumber === 6) { // Payment Status column
+          if (record.paid) {
+            cell.font = { color: { argb: '00AA00' }, bold: true };
+          } else {
+            cell.font = { color: { argb: 'FF0000' }, bold: true };
+          }
+        }
+
+        // Right align numeric columns
+        if ([4, 5].includes(cellNumber)) {
+          cell.alignment = { horizontal: 'right' };
+          cell.numFmt = '#,##0.00';
+        }
+      });
+    });
+
+    // Add totals row
+    const totalsRow = worksheet.addRow({
+      sno: '',
+      firstName: 'TOTALS',
+      secondName: '',
+      monthlyAmount: totalMonthlyAmount,
+      installmentAmount: totalInstallmentAmount,
+      paymentStatus: `Paid: ${totalPaidAmount}`,
+      lastUpdated: '',
+      month: '',
+      year: ''
+    });
+
+    // Style totals row
+    totalsRow.eachCell((cell) => {
+      cell.font = { bold: true };
+      if ([4, 5].includes(cell.col)) { // Monthly and Installment Amount columns
+        cell.numFmt = '#,##0.00';
+      }
+    });
+
+    // Add summary row
+    const summaryRowIndex = myRecords.length + 3;
+    worksheet.mergeCells(`A${summaryRowIndex}:E${summaryRowIndex}`);
+    const summaryCell = worksheet.getCell(`A${summaryRowIndex}`);
+    summaryCell.value = `Total Records: ${myRecords.length} | Generated on: ${new Date().toLocaleString()}`;
+    summaryCell.font = { bold: true, italic: true };
+    summaryCell.alignment = { horizontal: 'center' };
+
+    // Set response headers for file download
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="Installments_${month}_${year}.xlsx"`);
 
-    await wb.xlsx.write(res);
+    // Write the workbook to the response
+    await workbook.xlsx.write(res);
     res.end();
   } catch (e) {
     console.error(e);
@@ -942,81 +1087,347 @@ app.get('/api/users/:userId/report', authMiddleware, async (req, res) => {
     const user = await assertUserOwnedByAdmin(req.params.userId, req.adminId);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
+    // Get and sort installments
+    const monthOrder = {
+      January: 1, February: 2, March: 3, April: 4, May: 5, June: 6,
+      July: 7, August: 8, September: 9, October: 10, November: 11, December: 12
+    };
     const installments = await Installment.find({ userId: user._id }).lean();
-    installments.sort((a, b) => (a.year - b.year) || (MONTH_INDEX[a.month] - MONTH_INDEX[b.month]));
-
-    const paidTotal = installments.filter(i => i.paid).reduce((a, b) => a + (b.amount || 0), 0);
-    const left = Math.max(0, (user.totalInvestmentAmount || 0) - paidTotal);
-
-    const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet('User Report');
-
-    ws.mergeCells('A1', 'H1'); ws.getCell('A1').value = 'User Details';
-    ws.getCell('A1').font = { bold: true, size: 14 };
-    ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
-    ws.getRow(1).height = 24;
-
-    ws.addRow([]);
-    ws.addRow(['Name', `${user.firstName || ''} ${user.secondName || ''}`.trim(),
-               'Mobile', user.mobileNumber || '',
-               'Account Type', user.accountType || '',
-               'Nominee', user.nomineeName || '']);
-    ws.addRow(['Account No.1', user.accountNumber1 || '',
-               'CIF No.1', user.cifNumber1 || '',
-               'Monthly Amount', user.monthlyAmount || 0,
-               'Maturity Amount', user.maturityAmount || 0]);
-    ws.addRow(['Account No.2', user.accountNumber2 || '',
-               'CIF No.2', user.cifNumber2 || '',
-               'Open Date', user.accountOpenDate,
-               'Close Date', user.accountCloseDate]);
-
-    ws.addRow([]);
-    ws.addRow(['#','Month','Year','Amount','Paid','Created On','Updated On']);
-    const headerRowIdx = ws.lastRow.number;
-
-    let idx = 1;
-    for (const inst of installments) {
-      ws.addRow([
-        idx++,
-        inst.month,
-        inst.year,
-        inst.amount || 0,
-        inst.paid ? 'Yes' : 'No',
-        new Date(inst.createdAt).toLocaleDateString(),
-        new Date(inst.updatedAt).toLocaleDateString(),
-      ]);
-    }
-
-    ws.addRow([]);
-    const paidRow = ws.addRow(['Total Investment', user.totalInvestmentAmount || 0, 'Paid Total', paidTotal, 'Left Amount', left, '', '']);
-    paidRow.font = { bold: true };
-
-    ws.columns = [
-      { width: 10 },{ width: 16 },{ width: 10 },{ width: 14 },{ width: 12 },{ width: 16 },{ width: 16 },{ width: 16 }
-    ];
-    ws.eachRow((row) => { row.alignment = { vertical: 'middle', horizontal: 'center' }; });
-
-    const lastRowIdx = ws.lastRow.number - 2;
-    for (let r = headerRowIdx; r <= lastRowIdx; r++) {
-      ws.getRow(r).eachCell((cell) => {
-        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-      });
-    }
-
-    const headerRow = ws.getRow(headerRowIdx);
-    headerRow.font = { bold: true };
-    headerRow.height = 22;
-    headerRow.eachCell((cell) => {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEEEEE' } };
+    installments.sort((a, b) => {
+      if (a.year !== b.year) return a.year - b.year;
+      return (monthOrder[a.month] || 13) - (monthOrder[b.month] || 13);
     });
 
-    ws.views = [{ state: 'frozen', ySplit: headerRowIdx }];
+    // Calculate totals
+    const totalInstallments = installments.length;
+    const paidInstallments = installments.filter(i => i.paid);
+    const paidInstallmentsCount = paidInstallments.length;
+    const totalPaidAmount = paidInstallments.reduce((sum, inst) => sum + inst.amount, 0);
+    const leftInstallment = Math.max(0, (user.totalInvestmentAmount || 0) - totalPaidAmount);
 
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    // Create workbook and worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('User Report');
+    worksheet.properties.defaultRowHeight = 20;
+
+    // 1. Company Header
+    const companyRow = worksheet.addRow(['INVESTMENT REPORT']);
+    worksheet.mergeCells('A1:H1');
+    companyRow.getCell(1).font = { 
+      bold: true, 
+      size: 18, 
+      color: { argb: 'FFFFFF' },
+      name: 'Calibri'
+    };
+    companyRow.getCell(1).alignment = { 
+      horizontal: 'center', 
+      vertical: 'middle' 
+    };
+    companyRow.getCell(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '2E4A6B' } // Dark blue
+    };
+    companyRow.height = 35;
+
+    // 2. User Details Header
+    worksheet.addRow([]);
+    const userHeaderRow = worksheet.addRow(['USER DETAILS']);
+    worksheet.mergeCells(`A${userHeaderRow.number}:H${userHeaderRow.number}`);
+    userHeaderRow.getCell(1).font = { 
+      bold: true, 
+      size: 14, 
+      color: { argb: 'FFFFFF' },
+      name: 'Calibri'
+    };
+    userHeaderRow.getCell(1).alignment = { 
+      horizontal: 'center', 
+      vertical: 'middle' 
+    };
+    userHeaderRow.getCell(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4A90A4' } // Medium blue
+    };
+    userHeaderRow.height = 28;
+
+    // 3. User Details Rows (4 columns layout)
+    const userDetails = [
+      ['First Name', user.firstName, 'Second Name', user.secondName || 'N/A'],
+      ['Mobile Number', user.mobileNumber, 'Account Type', user.accountType || 'N/A'],
+      ['Account No.1', user.accountNumber1, 'CIF No.1', user.cifNumber1],
+      ['Account No.2', user.accountNumber2 || 'N/A', 'CIF No.2', user.cifNumber2 || 'N/A'],
+      ['Monthly Amount', user.monthlyAmount, 'Maturity Amount', user.maturityAmount],
+      ['Total Investment', user.totalInvestmentAmount, 'Left Investment', leftInstallment],
+      ['Account Open Date', user.accountOpenDate, 'Account Close Date', user.accountCloseDate],
+      ['Nominee Name', user.nomineeName, '', '']
+    ];
+
+    userDetails.forEach(detail => {
+      const row = worksheet.addRow(detail);
+      
+      // Style label columns (odd columns)
+      for (let i = 1; i <= 4; i += 2) {
+        if (detail[i-1]) {
+          const cell = row.getCell(i);
+          cell.font = { 
+            bold: true, 
+            color: { argb: '2E4A6B' },
+            name: 'Calibri'
+          };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'F0F8FF' } // Light blue
+          };
+          cell.alignment = { 
+            horizontal: 'left', 
+            vertical: 'middle',
+            indent: 1
+          };
+        }
+      }
+      
+      // Style value columns (even columns)
+      for (let i = 2; i <= 4; i += 2) {
+        if (detail[i-1]) {
+          const cell = row.getCell(i);
+          cell.font = { 
+            name: 'Calibri',
+            color: { argb: '333333' }
+          };
+          cell.alignment = { 
+            horizontal: 'left', 
+            vertical: 'middle',
+            indent: 1
+          };
+          
+          // Format currency values
+          if (typeof detail[i-1] === 'number') {
+            cell.numFmt = '₹#,##0.00';
+          }
+        }
+      }
+      
+      // Add borders
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'CCCCCC' } },
+          left: { style: 'thin', color: { argb: 'CCCCCC' } },
+          bottom: { style: 'thin', color: { argb: 'CCCCCC' } },
+          right: { style: 'thin', color: { argb: 'CCCCCC' } }
+        };
+      });
+    });
+
+    // 4. Installments Header
+    worksheet.addRow([]);
+    worksheet.addRow([]);
+    const installmentsHeaderRow = worksheet.addRow(['INSTALLMENT DETAILS']);
+    worksheet.mergeCells(`A${installmentsHeaderRow.number}:H${installmentsHeaderRow.number}`);
+    installmentsHeaderRow.getCell(1).font = { 
+      bold: true, 
+      size: 14, 
+      color: { argb: 'FFFFFF' },
+      name: 'Calibri'
+    };
+    installmentsHeaderRow.getCell(1).alignment = { 
+      horizontal: 'center', 
+      vertical: 'middle' 
+    };
+    installmentsHeaderRow.getCell(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '4A90A4' } // Medium blue
+    };
+    installmentsHeaderRow.height = 28;
+
+    // 5. Installments Table Headers
+    const headerRow = worksheet.addRow([
+      'S.No', 'Month', 'Year', 'Amount (₹)', 'Status', 'Created On', 'Updated On', ''
+    ]);
+    headerRow.eachCell((cell) => {
+      cell.font = { 
+        bold: true, 
+        color: { argb: 'FFFFFF' },
+        name: 'Calibri',
+        size: 11
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: '2E4A6B' } // Dark blue
+      };
+      cell.alignment = { 
+        horizontal: 'center', 
+        vertical: 'middle' 
+      };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } }
+      };
+    });
+    headerRow.height = 25;
+
+    // 6. Installment Data Rows
+    installments.forEach((inst, i) => {
+      const row = worksheet.addRow([
+        i + 1,
+        inst.month,
+        inst.year,
+        inst.amount,
+        inst.paid ? 'Paid' : 'Pending',
+        new Date(inst.createdAt).toLocaleDateString(),
+        new Date(inst.updatedAt).toLocaleDateString(),
+        ''
+      ]);
+
+      // Alternate row colors
+      const isEvenRow = (i + 1) % 2 === 0;
+      const rowColor = isEvenRow ? 'F8F9FA' : 'FFFFFF';
+
+      row.eachCell((cell) => {
+        cell.font = { 
+          name: 'Calibri',
+          color: { argb: '333333' }
+        };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: rowColor }
+        };
+        cell.alignment = { 
+          horizontal: 'center', 
+          vertical: 'middle' 
+        };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'DDDDDD' } },
+          left: { style: 'thin', color: { argb: 'DDDDDD' } },
+          bottom: { style: 'thin', color: { argb: 'DDDDDD' } },
+          right: { style: 'thin', color: { argb: 'DDDDDD' } }
+        };
+      });
+
+      // Format amount column
+      row.getCell(4).numFmt = '₹#,##0.00';
+      
+      // Style status column based on paid/pending
+      const statusCell = row.getCell(5);
+      if (inst.paid) {
+        statusCell.font = { 
+          bold: true, 
+          color: { argb: 'FFFFFF' },
+          name: 'Calibri'
+        };
+        statusCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: '28A745' } // Green for paid
+        };
+      } else {
+        statusCell.font = { 
+          bold: true, 
+          color: { argb: 'FFFFFF' },
+          name: 'Calibri'
+        };
+        statusCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'DC3545' } // Red for pending
+        };
+      }
+    });
+
+    // 7. Summary Section
+    worksheet.addRow([]);
+    worksheet.addRow([]);
+    const summaryRow = worksheet.addRow(['SUMMARY']);
+    worksheet.mergeCells(`A${summaryRow.number}:H${summaryRow.number}`);
+    summaryRow.getCell(1).font = { 
+      bold: true, 
+      size: 12, 
+      color: { argb: 'FFFFFF' },
+      name: 'Calibri'
+    };
+    summaryRow.getCell(1).alignment = { 
+      horizontal: 'center', 
+      vertical: 'middle' 
+    };
+    summaryRow.getCell(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '6C757D' } // Gray
+    };
+    summaryRow.height = 25;
+
+    const summaryDetails = [
+      ['Total Installments:', totalInstallments, 'Paid Installments:', paidInstallmentsCount],
+      ['Pending Installments:', totalInstallments - paidInstallmentsCount, 'Total Paid Amount:', `₹${totalPaidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`],
+      ['Remaining Amount:', `₹${leftInstallment.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, '', '']
+    ];
+
+    summaryDetails.forEach(detail => {
+      const row = worksheet.addRow(detail);
+      
+      // Style label columns
+      for (let i = 1; i <= 4; i += 2) {
+        if (detail[i-1]) {
+          const cell = row.getCell(i);
+          cell.font = { 
+            bold: true, 
+            color: { argb: '2E4A6B' },
+            name: 'Calibri'
+          };
+        }
+      }
+      
+      // Style value columns
+      for (let i = 2; i <= 4; i += 2) {
+        if (detail[i-1]) {
+          const cell = row.getCell(i);
+          cell.font = { 
+            bold: true,
+            color: { argb: '333333' },
+            name: 'Calibri'
+          };
+        }
+      }
+      
+      row.eachCell((cell) => {
+        cell.alignment = { 
+          horizontal: 'center', 
+          vertical: 'middle' 
+        };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'CCCCCC' } },
+          left: { style: 'thin', color: { argb: 'CCCCCC' } },
+          bottom: { style: 'thin', color: { argb: 'CCCCCC' } },
+          right: { style: 'thin', color: { argb: 'CCCCCC' } }
+        };
+      });
+    });
+
+    // 8. Auto-fit columns
+    worksheet.columns.forEach(column => {
+      let maxLength = 0;
+      column.eachCell({ includeEmpty: true }, cell => {
+        const columnLength = cell.value ? cell.value.toString().length : 0;
+        if (columnLength > maxLength) {
+          maxLength = columnLength;
+        }
+      });
+      column.width = Math.min(Math.max(maxLength + 2, 10), 30);
+    });
+
+    // 9. Set response headers
     const safeName = `${user.firstName || 'User'}_${user._id}`.replace(/\s+/g, '');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${safeName}_FullReport.xlsx"`);
 
-    await wb.xlsx.write(res);
+    // 10. Send the workbook
+    await workbook.xlsx.write(res);
     res.end();
   } catch (e) {
     console.error(e);

@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
@@ -12,23 +11,32 @@ import {
   CalendarDays,
   FileSpreadsheet,
   Play,
-  ShieldCheck
+  ShieldCheck,
+  User,
+  Phone,
+  CreditCard,
+  Calendar,
+  DollarSign,
+  TrendingUp,
+  Building,
+  Users,
+  Search,
+  Filter,
+  MoreVertical
 } from "lucide-react";
 
 /**
  * Installment Tracker Frontend (Single-file React)
- * - Tailwind UI, axios API client
- * - Pages: Login, UserList, UserDetails
- * - Modals: Add/Edit User, Update Installment, Monthly Report Download
- * - Snackbars for feedback
- *
- * API_BASE: set to your backend URL
+ * - Enhanced UI with mobile card view and desktop table view
+ * - Stunning gradients and modern design
+ * - Avatar generation from user names
+ * - Responsive design with Tailwind
  */
 
 const API_BASE = "http://localhost:4000"; // change if backend runs elsewhere
 
 // ========================
-// API Client
+// API Client (unchanged)
 // ========================
 const api = axios.create({ baseURL: API_BASE });
 
@@ -64,45 +72,67 @@ async function downloadFile(url, params = {}, filename = "report.xlsx") {
 }
 
 // ========================
-// UI Primitives
+// Avatar Component
 // ========================
-const Button = ({ as:Comp = "button", className = "", children, ...props }) => (
-  <Comp
-    className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2 font-medium shadow-sm border border-transparent hover:shadow transition active:scale-[0.98] bg-blue-600 text-white ${className}`}
-    {...props}
-  >
-    {children}
-  </Comp>
-);
+const Avatar = ({ firstName, secondName, size = "w-12 h-12", textSize = "text-lg" }) => {
+  const initials = `${firstName?.charAt(0) || ''}${secondName?.charAt(0) || ''}`.toUpperCase();
+  const colors = [
+    'bg-gradient-to-br from-purple-500 to-pink-500',
+    'bg-gradient-to-br from-blue-500 to-cyan-500',
+    'bg-gradient-to-br from-green-500 to-teal-500',
+    'bg-gradient-to-br from-orange-500 to-red-500',
+    'bg-gradient-to-br from-indigo-500 to-purple-500',
+    'bg-gradient-to-br from-pink-500 to-rose-500',
+    'bg-gradient-to-br from-cyan-500 to-blue-500',
+    'bg-gradient-to-br from-teal-500 to-green-500'
+  ];
+  const colorIndex = (firstName?.charCodeAt(0) || 0) % colors.length;
+
+  return (
+    <div className={`${size} ${colors[colorIndex]} rounded-full flex items-center justify-center text-white font-bold ${textSize} shadow-lg border-2 border-white/20`}>
+      {initials}
+    </div>
+  );
+};
+
+// ========================
+// Enhanced UI Primitives
+// ========================
+const Button = ({ as: Comp = "button", className = "", children, variant = "primary", ...props }) => {
+  const variants = {
+    primary: "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl",
+    secondary: "bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white shadow-md hover:shadow-lg border border-gray-200/50",
+    danger: "bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl"
+  };
+
+  return (
+    <Comp
+      className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 font-semibold transition-all duration-200 active:scale-[0.98] ${variants[variant]} ${className}`}
+      {...props}
+    >
+      {children}
+    </Comp>
+  );
+};
 
 const SecondaryButton = ({ className = "", children, ...props }) => (
-  <button
-    className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2 font-medium border bg-white text-gray-700 hover:bg-gray-50 shadow-sm ${className}`}
-    {...props}
-  >
-    {children}
-  </button>
+  <Button variant="secondary" className={className} {...props}>{children}</Button>
 );
 
 const DangerButton = ({ className = "", children, ...props }) => (
-  <button
-    className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2 font-medium border border-red-200 bg-red-600 text-white hover:bg-red-700 shadow-sm ${className}`}
-    {...props}
-  >
-    {children}
-  </button>
+  <Button variant="danger" className={className} {...props}>{children}</Button>
 );
 
 const Input = ({ className = "", ...props }) => (
   <input
-    className={`w-full rounded-xl border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+    className={`w-full rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${className}`}
     {...props}
   />
 );
 
 const Select = ({ className = "", children, ...props }) => (
   <select
-    className={`w-full rounded-xl border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+    className={`w-full rounded-xl border border-gray-200 bg-white/50 backdrop-blur-sm px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${className}`}
     {...props}
   >
     {children}
@@ -110,41 +140,85 @@ const Select = ({ className = "", children, ...props }) => (
 );
 
 const Label = ({ children }) => (
-  <label className="text-sm font-semibold text-gray-700 mb-1 block">{children}</label>
+  <label className="text-sm font-semibold text-gray-700 mb-2 block">{children}</label>
 );
 
-const Card = ({ className = "", children }) => (
-  <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 ${className}`}>{children}</div>
+const Card = ({ className = "", children, hover = false }) => (
+  <div className={`bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 ${hover ? 'hover:shadow-2xl hover:-translate-y-1 transition-all duration-300' : ''} ${className}`}>
+    {children}
+  </div>
 );
 
 const Modal = ({ open, onClose, title, children, footer }) => {
   if (!open) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-2xl mx-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between pb-3 border-b">
-            <h3 className="text-lg font-semibold">{title}</h3>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl">✕</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+      {/* Dark backdrop with blur */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal container */}
+      <div className="relative w-full max-w-[95%] sm:max-w-2xl md:max-w-4xl max-h-[90vh] overflow-hidden">
+        <Card className="p-4 sm:p-6 rounded-2xl">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-gray-200/50">
+            <h3 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+              {title}
+            </h3>
+            <button
+              onClick={onClose}
+              className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-xl transition-colors"
+            >
+              <svg
+                className="w-5 h-5 sm:w-6 sm:h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
           </div>
-          <div className="py-4">{children}</div>
-          {footer && <div className="pt-3 border-t flex justify-end gap-2">{footer}</div>}
+
+          {/* Content */}
+          <div className="py-4 sm:py-6 overflow-y-auto max-h-[55vh] sm:max-h-[60vh]">
+            {children}
+          </div>
+
+          {/* Footer */}
+          {footer && (
+            <div className="pt-3 sm:pt-4 border-t border-gray-200/50 flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
+              {footer}
+            </div>
+          )}
         </Card>
       </div>
     </div>
   );
 };
 
+
 const Snackbar = ({ message, type = "success", onClose }) => {
   if (!message) return null;
+  const colors = {
+    success: "bg-gradient-to-r from-green-500 to-emerald-500",
+    error: "bg-gradient-to-r from-red-500 to-rose-500",
+    warning: "bg-gradient-to-r from-yellow-500 to-orange-500"
+  };
+
   return (
-    <div className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-50 min-w-[280px] max-w-[90vw] rounded-xl px-4 py-3 text-white shadow-lg ${
-      type === "error" ? "bg-red-600" : type === "warning" ? "bg-yellow-600" : "bg-green-600"
-    }`}>
+    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 min-w-[320px] max-w-[90vw] rounded-2xl px-6 py-4 text-white shadow-2xl border border-white/20 ${colors[type]}`}>
       <div className="flex items-center justify-between gap-6">
-        <span className="font-medium">{message}</span>
-        <button onClick={onClose} className="text-white/90">Close</button>
+        <span className="font-semibold">{message}</span>
+        <button onClick={onClose} className="text-white/90 hover:text-white transition-colors">Close</button>
       </div>
     </div>
   );
@@ -176,26 +250,74 @@ function LoginPage({ onLoggedIn, setSnack }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-violet-50 flex items-center justify-center p-6">
-      <Card className="w-full max-w-md p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <ShieldCheck className="text-blue-600" />
-          <h1 className="text-2xl font-bold">Installment Tracker - Admin</h1>
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0">
+        {/* Purple Glow */}
+        <div className="absolute top-1/4 left-1/4 w-40 h-40 sm:w-56 sm:h-56 md:w-72 md:h-72 bg-purple-500/20 rounded-full blur-2xl sm:blur-3xl animate-pulse"></div>
+
+        {/* Blue Glow */}
+        <div className="absolute bottom-1/4 right-1/4 w-52 h-52 sm:w-72 sm:h-72 md:w-96 md:h-96 bg-blue-500/20 rounded-full blur-2xl sm:blur-3xl animate-pulse delay-1000"></div>
+
+        {/* Indigo Glow */}
+        <div className="absolute top-1/2 left-1/2 w-36 h-36 sm:w-48 sm:h-48 md:w-64 md:h-64 bg-indigo-500/20 rounded-full blur-2xl sm:blur-3xl animate-pulse delay-500"></div>
+      </div>
+
+
+      <Card className="w-full max-w-[95%] sm:max-w-md p-6 sm:p-8 relative z-10">
+        {/* Header */}
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-3 sm:mb-4">
+            <ShieldCheck className="text-white" size={28} />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-1 sm:mb-2">
+            Installment Tracker
+          </h1>
+          <p className="text-gray-600 text-sm sm:text-base">Admin Portal</p>
         </div>
-        <form className="space-y-4" onSubmit={handleLogin}>
+
+        {/* Form */}
+        <form className="space-y-4 sm:space-y-6" onSubmit={handleLogin}>
           <div>
-            <Label>Email</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@example.com" required />
+            <Label>Email Address</Label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@example.com"
+              required
+            />
           </div>
           <div>
             <Label>Password</Label>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
+          <Button
+            type="submit"
+            className="w-full text-base sm:text-lg py-2.5 sm:py-3 flex items-center justify-center gap-2"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Signing in...
+              </>
+            ) : (
+              <>
+                <ShieldCheck size={18} className="sm:size-20" />
+                Sign In
+              </>
+            )}
           </Button>
         </form>
       </Card>
+
     </div>
   );
 }
@@ -206,6 +328,10 @@ function LoginPage({ onLoggedIn, setSnack }) {
 function UserListPage({ onLogout, onOpenUser, setSnack }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [accountTypeFilter, setAccountTypeFilter] = useState(""); // "" means all
+  const [viewMode, setViewMode] = useState("card"); // card or table
 
   const [addOpen, setAddOpen] = useState(false);
   const [editUser, setEditUser] = useState(null);
@@ -214,8 +340,13 @@ function UserListPage({ onLogout, onOpenUser, setSnack }) {
   async function loadUsers() {
     try {
       setLoading(true);
-      const { data } = await api.get("/api/users");
-      setUsers(Array.isArray(data) ? data : (data?.users || []));
+      const { data } = await api.get("/api/users", {
+        params: {
+          accountType: accountTypeFilter || undefined, // send only if set
+          search: searchTerm || undefined
+        }
+      });
+      setUsers(Array.isArray(data) ? data : data?.users || []);
     } catch (err) {
       setSnack({ type: "error", message: err?.response?.data?.error || "Failed to load users" });
     } finally {
@@ -223,7 +354,15 @@ function UserListPage({ onLogout, onOpenUser, setSnack }) {
     }
   }
 
-  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => { loadUsers(); }, [accountTypeFilter]);
+
+  // Manual search trigger
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      loadUsers();
+    }, 300);
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm]);
 
   async function handleDelete(u) {
     if (!confirm(`Delete user ${u.firstName}? This will remove all installments too.`)) return;
@@ -236,63 +375,182 @@ function UserListPage({ onLogout, onOpenUser, setSnack }) {
     }
   }
 
+  const filteredUsers = users.filter(user =>
+    user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.secondName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.mobileNumber?.includes(searchTerm)
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <UserRound />
-            <h2 className="font-bold text-lg">Users</h2>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      {/* Header - Made responsive */}
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-white/50 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-1 sm:p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
+                <Users className="text-white" size={20} />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                  User Management
+                </h1>
+                <p className="text-xs sm:text-sm text-gray-500">{users.length} total users</p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <SecondaryButton onClick={() => setReportOpen(true)}><Download size={18}/> Monthly Report</SecondaryButton>
-            <Button onClick={() => setAddOpen(true)}><Plus size={18}/> Add User</Button>
-            <DangerButton onClick={() => { clearToken(); onLogout(); }}><LogOut size={18}/> Logout</DangerButton>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <SecondaryButton onClick={() => setReportOpen(true)} className="text-xs sm:text-sm">
+              <Download size={16} /> <span className="hidden sm:inline">Report</span>
+            </SecondaryButton>
+            <Button onClick={() => setAddOpen(true)} className="text-xs sm:text-sm">
+              <Plus size={16} /> <span className="hidden sm:inline">Add User</span>
+            </Button>
+            <DangerButton onClick={() => { clearToken(); onLogout(); }} className="text-xs sm:text-sm">
+              <LogOut size={16} /> <span className="hidden sm:inline">Logout</span>
+            </DangerButton>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-4">
+      <main className="max-w-7xl mx-auto p-4 lg:p-8">
+        {/* Search and Filters */}
+        <div className="mb-8">
+          <div className="flex flex-wrap justify-center items-center gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-[220px] max-w-[300px]">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={20}
+              />
+              <Input
+                placeholder="Search users by name or mobile..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-12 text-sm sm:text-base w-full"
+              />
+            </div>
+
+            {/* Account Type Filter */}
+            <div className="flex items-center gap-2 min-w-[160px] max-w-[200px]">
+              <label
+                htmlFor="accountTypeFilter"
+                className="text-sm font-medium text-gray-700 whitespace-nowrap"
+              >
+                Sort User
+              </label>
+              <select
+                id="accountTypeFilter"
+                value={accountTypeFilter}
+                onChange={(e) => setAccountTypeFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm w-full"
+              >
+                <option value="">All Types</option>
+                <option value="First Slot">First Slot</option>
+                <option value="Second Slot">Second Slot</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+
         {loading ? (
-          <div className="flex justify-center items-center h-40">
-            <div className="animate-spin w-10 h-10 rounded-full border-4 border-blue-500 border-t-transparent" />
+          <div className="flex justify-center items-center h-64">
+            <div className="relative">
+              <div className="w-16 h-16 border-4 border-blue-200 rounded-full"></div>
+              <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+            </div>
           </div>
-        ) : users.length === 0 ? (
-          <Card className="p-8 text-center text-gray-600">No users yet. Click "Add User" to create one.</Card>
+        ) : filteredUsers.length === 0 ? (
+          <Card className="p-6 sm:p-12 text-center">
+            <Users className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-600 mb-2">
+              {searchTerm ? "No users found" : "No users yet"}
+            </h3>
+            <p className="text-sm text-gray-500 mb-6">
+              {searchTerm ? "Try adjusting your search terms" : "Create your first user to get started"}
+            </p>
+            {!searchTerm && (
+              <Button onClick={() => setAddOpen(true)}>
+                <Plus size={18} /> Add First User
+              </Button>
+            )}
+          </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.isArray(users) && users.map((u) => (
-              <Card key={u._id} className="p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-semibold text-lg">{u.firstName} {u.secondName}</h3>
-                    <p className="text-sm text-gray-500">Mobile: {u.mobileNumber}</p>
-                    <p className="text-sm text-gray-500">Type: {u.accountType || "-"}</p>
-                    <p className="text-sm text-gray-500">Monthly: ₹{u.monthlyAmount}</p>
-                    <p className="text-sm text-gray-500">Left: <span className="font-semibold text-blue-600">₹{u.leftInvestmentAmount}</span></p>
+          <>
+            {/* Card View - Always shown now */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {filteredUsers.map((u) => (
+                <Card key={u._id} className="p-4 sm:p-6 group" hover>
+                  <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
+                    <Avatar firstName={u.firstName} secondName={u.secondName} size="w-10 h-10 sm:w-14 sm:h-14" />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-base sm:text-lg text-gray-800 truncate">
+                        {u.firstName} {u.secondName}
+                      </h3>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 mt-1">
+                        <Phone size={14} />
+                        <span>{u.mobileNumber}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => setEditUser(u)}
+                        className="p-1 sm:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(u)}
+                        className="p-1 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <SecondaryButton onClick={() => setEditUser(u)} title="Edit"><Edit size={16}/></SecondaryButton>
-                    <DangerButton onClick={() => handleDelete(u)} title="Delete"><Trash2 size={16}/></DangerButton>
+
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
+                    <div className="bg-gray-50/50 rounded-lg p-2 sm:p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Building size={14} className="text-gray-500" />
+                        <span className="text-xs font-medium text-gray-500">Account Type</span>
+                      </div>
+                      <p className="font-semibold text-xs sm:text-sm">{u.accountType || "N/A"}</p>
+                    </div>
+                    <div className="bg-gray-50/50 rounded-lg p-2 sm:p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <DollarSign size={14} className="text-gray-500" />
+                        <span className="text-xs font-medium text-gray-500">Monthly</span>
+                      </div>
+                      <p className="font-semibold text-xs sm:text-sm">₹{u.monthlyAmount}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="pt-4 flex gap-2">
-                  <Button className="flex-1" onClick={() => onOpenUser(u)}><CalendarDays size={18}/> Details</Button>
-                </div>
-              </Card>
-            ))}
-          </div>
+
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs sm:text-sm font-medium text-gray-600">Paid Count</span>
+                      <span className="text-sm sm:text-lg font-bold text-blue-600">{u.paidCount}</span>
+                    </div>
+                  </div>
+
+                  <Button onClick={() => onOpenUser(u)} className="w-full text-xs sm:text-sm">
+                    <CalendarDays size={18} /> View Details
+                  </Button>
+                </Card>
+              ))}
+            </div>
+          </>
         )}
       </main>
 
-      {/* Add User Modal */}
+      {/* Modals - unchanged */}
       <UserFormModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
         onSaved={(newUser) => { setUsers([newUser, ...users]); setAddOpen(false); setSnack({ type: "success", message: "User created" }); }}
       />
 
-      {/* Edit User Modal */}
       <UserFormModal
         open={!!editUser}
         user={editUser}
@@ -304,7 +562,6 @@ function UserListPage({ onLogout, onOpenUser, setSnack }) {
         }}
       />
 
-      {/* Monthly Report Modal */}
       <MonthlyReportModal open={reportOpen} onClose={() => setReportOpen(false)} setSnack={setSnack} />
     </div>
   );
@@ -364,81 +621,311 @@ function UserDetailsPage({ user, onBack, setSnack }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button onClick={onBack} className="p-2 rounded-xl hover:bg-gray-100"><ChevronLeft/></button>
-            <h2 className="font-bold text-lg">User Details</h2>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      {/* Header - Made responsive */}
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-white/50 shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button
+              onClick={onBack}
+              className="p-1 sm:p-2 rounded-xl hover:bg-gray-100 transition-colors"
+            >
+              <ChevronLeft size={20} className="sm:w-6 sm:h-6" />
+            </button>
+            <Avatar firstName={details.firstName} secondName={details.secondName} size="w-10 h-10 sm:w-12 sm:h-12" />
+            <div>
+              <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                {details.firstName} {details.secondName}
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-500">User Details & Installments</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <SecondaryButton onClick={handleGenerate}><Play size={18}/> Generate Installments</SecondaryButton>
-            <Button onClick={downloadFullReport}><FileSpreadsheet size={18}/> Full Report</Button>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <SecondaryButton onClick={handleGenerate} className="text-xs sm:text-sm">
+              <Play size={16} className="sm:w-5 sm:h-5" /> <span className="hidden sm:inline">Generate</span>
+            </SecondaryButton>
+            <Button onClick={downloadFullReport} className="text-xs sm:text-sm">
+              <FileSpreadsheet size={16} className="sm:w-5 sm:h-5" /> <span className="hidden sm:inline">Full Report</span>
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-4 space-y-4">
-        {/* User Summary */}
-        <Card className="p-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            <div><p className="text-gray-500">Name</p><p className="font-semibold">{details.firstName} {details.secondName}</p></div>
-            <div><p className="text-gray-500">Mobile</p><p className="font-semibold">{details.mobileNumber}</p></div>
-            <div><p className="text-gray-500">Account Type</p><p className="font-semibold">{details.accountType || '-'}</p></div>
-            <div><p className="text-gray-500">Monthly</p><p className="font-semibold">₹{details.monthlyAmount}</p></div>
-            <div><p className="text-gray-500">Total</p><p className="font-semibold">₹{details.totalInvestmentAmount}</p></div>
-            <div><p className="text-gray-500">Left</p><p className="font-semibold text-blue-600">₹{details.leftInvestmentAmount}</p></div>
-            <div><p className="text-gray-500">Open</p><p className="font-semibold">{details.accountOpenDate}</p></div>
-            <div><p className="text-gray-500">Close</p><p className="font-semibold">{details.accountCloseDate}</p></div>
+      <main className="max-w-7xl mx-auto p-4 lg:p-8 space-y-6 sm:space-y-8">
+        {/* User Profile Card */}
+        <Card className="overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-4 sm:p-6 text-white">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+              <Avatar
+                firstName={details.firstName}
+                secondName={details.secondName}
+                size="w-16 h-16 sm:w-20 sm:h-20"
+                textSize="text-xl sm:text-2xl"
+              />
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl sm:text-3xl font-bold mb-2">{details.firstName} {details.secondName}</h2>
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 text-sm sm:text-base text-white/90">
+                  <div className="flex items-center gap-2">
+                    <Phone size={14} className="sm:w-4 sm:h-4" />
+                    <span>{details.mobileNumber}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Building size={14} className="sm:w-4 sm:h-4" />
+                    <span>{details.accountType || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar size={14} className="sm:w-4 sm:h-4" />
+                    <span>Since {details.accountOpenDate}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-white/80 text-xs sm:text-sm">Remaining Investment</div>
+                <div className="text-xl sm:text-3xl font-bold">₹{details.leftInvestmentAmount}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {/* Account Numbers */}
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 sm:p-4">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                  <div className="p-1 sm:p-2 bg-blue-200 rounded-lg">
+                    <CreditCard size={16} className="sm:w-5 sm:h-5 text-blue-700" />
+                  </div>
+                  <span className="font-semibold text-sm sm:text-base text-blue-800">Account Numbers</span>
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <div>
+                    <div className="text-xs text-gray-600 font-medium">Primary</div>
+                    <div className="font-semibold text-sm">{details.accountNumber1 || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-600 font-medium">Secondary</div>
+                    <div className="font-semibold text-sm">{details.accountNumber2 || 'N/A'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* CIF Numbers */}
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 sm:p-4">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                  <div className="p-1 sm:p-2 bg-green-200 rounded-lg">
+                    <User size={16} className="sm:w-5 sm:h-5 text-green-700" />
+                  </div>
+                  <span className="font-semibold text-sm sm:text-base text-green-800">CIF Numbers</span>
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <div>
+                    <div className="text-xs text-gray-600 font-medium">Primary</div>
+                    <div className="font-semibold text-sm">{details.cifNumber1 || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-600 font-medium">Secondary</div>
+                    <div className="font-semibold text-sm">{details.cifNumber2 || 'N/A'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Info */}
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3 sm:p-4">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                  <div className="p-1 sm:p-2 bg-purple-200 rounded-lg">
+                    <DollarSign size={16} className="sm:w-5 sm:h-5 text-purple-700" />
+                  </div>
+                  <span className="font-semibold text-sm sm:text-base text-purple-800">Investment</span>
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <div>
+                    <div className="text-xs text-gray-600 font-medium">Monthly Amount</div>
+                    <div className="font-semibold text-sm">₹{details.monthlyAmount}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-600 font-medium">Total Amount</div>
+                    <div className="font-semibold text-sm">₹{details.totalInvestmentAmount}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Info */}
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-3 sm:p-4">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                  <div className="p-1 sm:p-2 bg-orange-200 rounded-lg">
+                    <TrendingUp size={16} className="sm:w-5 sm:h-5 text-orange-700" />
+                  </div>
+                  <span className="font-semibold text-sm sm:text-base text-orange-800">Details</span>
+                </div>
+                <div className="space-y-1 sm:space-y-2">
+                  <div>
+                    <div className="text-xs text-gray-600 font-medium">Nominee</div>
+                    <div className="font-semibold text-sm">{details.nomineeName || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-600 font-medium">Maturity</div>
+                    <div className="font-semibold text-sm">₹{details.maturityAmount}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </Card>
 
-        {/* Installments */}
-        <Card className="p-0 overflow-hidden">
-          <div className="px-4 py-3 border-b flex items-center justify-between">
-            <h3 className="font-semibold">Installments ({installments.length})</h3>
+        {/* Installments Section */}
+        <Card className="overflow-hidden">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1 sm:p-2 bg-blue-200 rounded-lg">
+                  <CalendarDays size={18} className="sm:w-5 sm:h-5 text-blue-700" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base sm:text-lg">Installments</h3>
+                  <p className="text-xs sm:text-sm text-gray-600">{installments.length} total installments</p>
+                </div>
+              </div>
+              <div className="flex gap-2 sm:gap-4">
+                <div className="text-right">
+                  <div className="text-xs sm:text-sm text-gray-600">Paid</div>
+                  <div className="font-bold text-sm sm:text-base text-green-600">
+                    {installments.filter(i => i.paid).length}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs sm:text-sm text-gray-600">Pending</div>
+                  <div className="font-bold text-sm sm:text-base text-red-600">
+                    {installments.filter(i => !i.paid).length}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+
           {loading ? (
-            <div className="flex justify-center items-center h-40">
-              <div className="animate-spin w-10 h-10 rounded-full border-4 border-blue-500 border-t-transparent" />
+            <div className="flex justify-center items-center h-64">
+              <div className="relative">
+                <div className="w-16 h-16 border-4 border-blue-200 rounded-full"></div>
+                <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+              </div>
+            </div>
+          ) : installments.length === 0 ? (
+            <div className="text-center py-12 sm:py-16">
+              <CalendarDays className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-3 sm:mb-4" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-600 mb-1 sm:mb-2">No Installments Yet</h3>
+              <p className="text-sm text-gray-500 mb-4 sm:mb-6">Generate installments to get started</p>
+              <Button onClick={handleGenerate} className="text-sm sm:text-base">
+                <Play size={16} className="sm:w-5 sm:h-5" /> Generate Installments
+              </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-2 text-left">#</th>
-                    <th className="px-3 py-2">Month</th>
-                    <th className="px-3 py-2">Year</th>
-                    <th className="px-3 py-2">Amount</th>
-                    <th className="px-3 py-2">Paid</th>
-                    <th className="px-3 py-2">Created</th>
-                    <th className="px-3 py-2">Updated</th>
-                    <th className="px-3 py-2 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {installments.map((i, idx) => (
-                    <tr key={i._id} className="border-t">
-                      <td className="px-3 py-2">{idx + 1}</td>
-                      <td className="px-3 py-2 text-center">{i.month}</td>
-                      <td className="px-3 py-2 text-center">{i.year}</td>
-                      <td className="px-3 py-2 text-center">₹{i.amount}</td>
-                      <td className="px-3 py-2 text-center">
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${i.paid ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                          {i.paid ? "Yes" : "No"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-center">{new Date(i.createdAt).toLocaleDateString()}</td>
-                      <td className="px-3 py-2 text-center">{new Date(i.updatedAt).toLocaleDateString()}</td>
-                      <td className="px-3 py-2 text-right">
-                        <SecondaryButton onClick={() => setEditInst(i)}><Edit size={16}/> Edit</SecondaryButton>
-                      </td>
-                    </tr>
+            <>
+              {/* Mobile Card View */}
+              <div className="block lg:hidden">
+                <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                  {installments.map((inst, idx) => (
+                    <Card key={inst._id} className="p-3 sm:p-4" hover>
+                      <div className="flex items-center justify-between mb-2 sm:mb-3">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-sm sm:text-base">{inst.month} {inst.year}</div>
+                            <div className="text-xs sm:text-sm text-gray-500">₹{inst.amount}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <span className={`inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-semibold ${inst.paid
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                            }`}>
+                            {inst.paid ? "Paid" : "Pending"}
+                          </span>
+                          <button
+                            onClick={() => setEditInst(inst)}
+                            className="p-1 sm:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <Edit size={14} className="sm:w-4 sm:h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+                        <div>
+                          <span className="text-gray-500">Created:</span>
+                          <div className="font-medium">{new Date(inst.createdAt).toLocaleDateString()}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Updated:</span>
+                          <div className="font-medium">{new Date(inst.updatedAt).toLocaleDateString()}</div>
+                        </div>
+                      </div>
+                    </Card>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden lg:block">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left p-4 font-semibold text-gray-700">#</th>
+                        <th className="text-left p-4 font-semibold text-gray-700">Month</th>
+                        <th className="text-left p-4 font-semibold text-gray-700">Year</th>
+                        <th className="text-left p-4 font-semibold text-gray-700">Amount</th>
+                        <th className="text-left p-4 font-semibold text-gray-700">Status</th>
+                        <th className="text-left p-4 font-semibold text-gray-700">Created</th>
+                        <th className="text-left p-4 font-semibold text-gray-700">Updated</th>
+                        <th className="text-right p-4 font-semibold text-gray-700">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {installments.map((inst, idx) => (
+                        <tr key={inst._id} className={`border-b border-gray-100 hover:bg-gray-50/50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
+                          <td className="p-4">
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                              {idx + 1}
+                            </div>
+                          </td>
+                          <td className="p-4 font-medium">{inst.month}</td>
+                          <td className="p-4 font-medium">{inst.year}</td>
+                          <td className="p-4">
+                            <div className="font-semibold text-gray-800">₹{inst.amount}</div>
+                          </td>
+                          <td className="p-4">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${inst.paid
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                              }`}>
+                              {inst.paid ? "Paid" : "Pending"}
+                            </span>
+                          </td>
+                          <td className="p-4 text-sm text-gray-600">
+                            {new Date(inst.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="p-4 text-sm text-gray-600">
+                            {new Date(inst.updatedAt).toLocaleDateString()}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex justify-end">
+                              <button
+                                onClick={() => setEditInst(inst)}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Edit Installment"
+                              >
+                                <Edit size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
           )}
         </Card>
       </main>
@@ -451,8 +938,7 @@ function UserDetailsPage({ user, onBack, setSnack }) {
         onSaved={(updated) => {
           setInstallments((prev) => prev.map((x) => x._id === updated._id ? updated : x));
           setEditInst(null);
-          // refresh user details after an installment change
-          setDetails((d) => ({ ...d })); // triggers re-render
+          setDetails((d) => ({ ...d }));
           setSnack({ type: "success", message: "Installment updated" });
         }}
       />
@@ -464,7 +950,7 @@ function UserDetailsPage({ user, onBack, setSnack }) {
 // Modals
 // ========================
 const MONTHS = [
-  "January","February","March","April","May","June","July","August","September","October","November","December"
+  "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
 ];
 
 function MonthlyReportModal({ open, onClose, setSnack }) {
@@ -487,18 +973,20 @@ function MonthlyReportModal({ open, onClose, setSnack }) {
     <Modal open={open} onClose={onClose} title="Download Monthly Report" footer={
       <>
         <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
-        <Button onClick={handleDownload} disabled={loading}><Download size={18}/> {loading ? "Preparing..." : "Download"}</Button>
+        <Button onClick={handleDownload} disabled={loading}>
+          <Download size={18} /> {loading ? "Preparing..." : "Download"}
+        </Button>
       </>
     }>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <Label>Month</Label>
+          <Label>Select Month</Label>
           <Select value={month} onChange={(e) => setMonth(e.target.value)}>
             {MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
           </Select>
         </div>
         <div>
-          <Label>Year</Label>
+          <Label>Select Year</Label>
           <Input type="number" min="2000" max="2100" value={year} onChange={(e) => setYear(e.target.value)} />
         </div>
       </div>
@@ -550,7 +1038,13 @@ function UserFormModal({ open, onClose, onSaved, user }) {
 
   async function handleSave() {
     try {
-      const payload = { ...form, monthlyAmount: +form.monthlyAmount, totalInvestmentAmount: +form.totalInvestmentAmount, leftInvestmentAmount: +form.leftInvestmentAmount, maturityAmount: +form.maturityAmount };
+      const payload = {
+        ...form,
+        monthlyAmount: +form.monthlyAmount,
+        totalInvestmentAmount: +form.totalInvestmentAmount,
+        leftInvestmentAmount: +form.leftInvestmentAmount,
+        maturityAmount: +form.maturityAmount
+      };
       if (isEdit) {
         const { data } = await api.put(`/api/users/${user._id}`, payload);
         onSaved?.(data);
@@ -564,69 +1058,104 @@ function UserFormModal({ open, onClose, onSaved, user }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? "Edit User" : "Add User"} footer={
-      <>
-        <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
-        <Button onClick={handleSave}><SaveIcon/> {isEdit ? "Update" : "Create"}</Button>
-      </>
-    }>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-1">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={
+        <div className="flex items-center gap-3">
+          {isEdit && <Avatar firstName={form.firstName} secondName={form.secondName} size="w-8 h-8" textSize="text-sm" />}
+          <span>{isEdit ? "Edit User" : "Add New User"}</span>
+        </div>
+      }
+      footer={
+        <>
+          <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
+          <Button onClick={handleSave}>
+            <SaveIcon /> {isEdit ? "Update User" : "Create User"}
+          </Button>
+        </>
+      }
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Personal Information */}
+        <div className="col-span-full">
+          <h4 className="font-semibold text-lg mb-4 text-gray-800 border-b border-gray-200 pb-2">Personal Information</h4>
+        </div>
+
         <div>
-          <Label>First Name</Label>
-          <Input value={form.firstName} onChange={(e) => upd("firstName", e.target.value)} />
+          <Label>First Name *</Label>
+          <Input value={form.firstName} onChange={(e) => upd("firstName", e.target.value)} placeholder="Enter first name" />
         </div>
         <div>
           <Label>Second Name</Label>
-          <Input value={form.secondName || ""} onChange={(e) => upd("secondName", e.target.value)} />
+          <Input value={form.secondName || ""} onChange={(e) => upd("secondName", e.target.value)} placeholder="Enter second name" />
         </div>
         <div>
-          <Label>Mobile Number</Label>
-          <Input value={form.mobileNumber} onChange={(e) => upd("mobileNumber", e.target.value)} />
+          <Label>Mobile Number *</Label>
+          <Input value={form.mobileNumber} onChange={(e) => upd("mobileNumber", e.target.value)} placeholder="Enter mobile number" />
         </div>
         <div>
           <Label>Nominee Name</Label>
-          <Input value={form.nomineeName} onChange={(e) => upd("nomineeName", e.target.value)} />
+          <Input value={form.nomineeName} onChange={(e) => upd("nomineeName", e.target.value)} placeholder="Enter nominee name" />
         </div>
+
+        {/* Account Information */}
+        <div className="col-span-full mt-6">
+          <h4 className="font-semibold text-lg mb-4 text-gray-800 border-b border-gray-200 pb-2">Account Information</h4>
+        </div>
+
         <div>
           <Label>Account Number 1</Label>
-          <Input value={form.accountNumber1} onChange={(e) => upd("accountNumber1", e.target.value)} />
+          <Input value={form.accountNumber1} onChange={(e) => upd("accountNumber1", e.target.value)} placeholder="Primary account number" />
         </div>
         <div>
           <Label>Account Number 2</Label>
-          <Input value={form.accountNumber2 || ""} onChange={(e) => upd("accountNumber2", e.target.value)} />
+          <Input value={form.accountNumber2 || ""} onChange={(e) => upd("accountNumber2", e.target.value)} placeholder="Secondary account number" />
         </div>
         <div>
           <Label>CIF Number 1</Label>
-          <Input value={form.cifNumber1} onChange={(e) => upd("cifNumber1", e.target.value)} />
+          <Input value={form.cifNumber1} onChange={(e) => upd("cifNumber1", e.target.value)} placeholder="Primary CIF number" />
         </div>
         <div>
           <Label>CIF Number 2</Label>
-          <Input value={form.cifNumber2 || ""} onChange={(e) => upd("cifNumber2", e.target.value)} />
+          <Input value={form.cifNumber2 || ""} onChange={(e) => upd("cifNumber2", e.target.value)} placeholder="Secondary CIF number" />
         </div>
         <div>
           <Label>Account Type</Label>
           <Select value={form.accountType || ""} onChange={(e) => upd("accountType", e.target.value)}>
-            <option value="">Select</option>
-            <option>Before 15 days</option>
-            <option>After 15 days</option>
+            <option value="">Select account type</option>
+            <option>First Slot</option>
+            <option>Second Slot</option>
           </Select>
         </div>
+
+        {/* Investment Information */}
+        <div className="col-span-full mt-6">
+          <h4 className="font-semibold text-lg mb-4 text-gray-800 border-b border-gray-200 pb-2">Investment Information</h4>
+        </div>
+
         <div>
-          <Label>Monthly Amount (₹)</Label>
-          <Input type="number" value={form.monthlyAmount} onChange={(e) => upd("monthlyAmount", e.target.value)} />
+          <Label>Monthly Amount (₹) *</Label>
+          <Input type="number" value={form.monthlyAmount} onChange={(e) => upd("monthlyAmount", e.target.value)} placeholder="0" />
         </div>
         <div>
-          <Label>Total Investment Amount (₹)</Label>
-          <Input type="number" value={form.totalInvestmentAmount} onChange={(e) => upd("totalInvestmentAmount", e.target.value)} />
+          <Label>Total Investment Amount (₹) *</Label>
+          <Input type="number" value={form.totalInvestmentAmount} onChange={(e) => upd("totalInvestmentAmount", e.target.value)} placeholder="0" />
         </div>
         <div>
-          <Label>Left Investment Amount (₹)</Label>
-          <Input type="number" value={form.leftInvestmentAmount} onChange={(e) => upd("leftInvestmentAmount", e.target.value)} />
+          <Label>Left Investment Amount (₹) *</Label>
+          <Input type="number" value={form.leftInvestmentAmount} onChange={(e) => upd("leftInvestmentAmount", e.target.value)} placeholder="0" />
         </div>
         <div>
           <Label>Maturity Amount (₹)</Label>
-          <Input type="number" value={form.maturityAmount} onChange={(e) => upd("maturityAmount", e.target.value)} />
+          <Input type="number" value={form.maturityAmount} onChange={(e) => upd("maturityAmount", e.target.value)} placeholder="0" />
         </div>
+
+        {/* Date Information */}
+        <div className="col-span-full mt-6">
+          <h4 className="font-semibold text-lg mb-4 text-gray-800 border-b border-gray-200 pb-2">Account Dates</h4>
+        </div>
+
         <div>
           <Label>Account Open Date</Label>
           <Input type="date" value={form.accountOpenDate} onChange={(e) => upd("accountOpenDate", e.target.value)} />
@@ -656,22 +1185,44 @@ function InstallmentModal({ open, onClose, onSaved, installment }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={`Edit ${installment.month} ${installment.year}`} footer={
-      <>
-        <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
-        <Button onClick={save}><SaveIcon/> Update</Button>
-      </>
-    }>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
+            <CalendarDays className="text-white" size={20} />
+          </div>
+          <span>Edit {installment.month} {installment.year}</span>
+        </div>
+      }
+      footer={
+        <>
+          <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
+          <Button onClick={save}>
+            <SaveIcon /> Update Installment
+          </Button>
+        </>
+      }
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Label>Amount (₹)</Label>
-          <Input type="number" value={form.amount ?? 0} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} />
+          <Input
+            type="number"
+            value={form.amount ?? 0}
+            onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+            placeholder="Enter amount"
+          />
         </div>
         <div>
-          <Label>Paid</Label>
-          <Select value={form.paid ? "true" : "false"} onChange={(e) => setForm((f) => ({ ...f, paid: e.target.value === "true" }))}>
-            <option value="false">No</option>
-            <option value="true">Yes</option>
+          <Label>Payment Status</Label>
+          <Select
+            value={form.paid ? "true" : "false"}
+            onChange={(e) => setForm((f) => ({ ...f, paid: e.target.value === "true" }))}
+          >
+            <option value="false">Pending</option>
+            <option value="true">Paid</option>
           </Select>
         </div>
       </div>
@@ -680,7 +1231,10 @@ function InstallmentModal({ open, onClose, onSaved, installment }) {
 }
 
 const SaveIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-save"><path d="M7 21h10a2 2 0 0 0 2-2V7.5L16.5 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2"/><path d="M7 3v8h8"/></svg>
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-save">
+    <path d="M7 21h10a2 2 0 0 0 2-2V7.5L16.5 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2" />
+    <path d="M7 3v8h8" />
+  </svg>
 );
 
 // ========================
@@ -697,11 +1251,11 @@ export default function App() {
 
   function showSnack({ message, type = "success" }) {
     setSnack({ message, type });
-    setTimeout(() => setSnack({ message: "", type }), 3000);
+    setTimeout(() => setSnack({ message: "", type }), 4000);
   }
 
   return (
-    <div className="font-sans">
+    <div className="font-sans antialiased">
       {view === "auth" && (
         <LoginPage onLoggedIn={() => setView("list")} setSnack={showSnack} />
       )}
