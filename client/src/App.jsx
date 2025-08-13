@@ -24,6 +24,7 @@ import {
   Filter,
   MoreVertical
 } from "lucide-react";
+import InstallButton from "./InstallButton";
 
 /**
  * Installment Tracker Frontend (Single-file React)
@@ -1365,7 +1366,7 @@ export default function App() {
       {view === "details" && selected && (
         <UserDetailsPage user={selected} onBack={() => setView("list")} setSnack={showSnack} />
       )}
-
+      <InstallButton />
       <Snackbar message={snack.message} type={snack.type} onClose={() => setSnack({ message: "", type: snack.type })} />
     </div>
   );
