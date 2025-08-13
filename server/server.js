@@ -579,6 +579,7 @@ mongoose
 const ADMINS_RAW = [
   { id: 'admin1', name: 'Super Admin', email: 'admin1@example.com', password: 'password123' },
   { id: 'admin2', name: 'Finance Admin', email: 'admin2@example.com', password: 'securepass' },
+  { id: 'admin3', name: 'dharm gandhi', email: 'dharmgandhi@gmail.com', password: '1234' },
   // Add more admins here as needed:
   // { id: 'admin3', name: 'Bob', email: 'bob@example.com', password: 'bobspass' },
 ];

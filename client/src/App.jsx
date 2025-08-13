@@ -34,7 +34,7 @@ import InstallButton from "./InstallButton";
  * - Responsive design with Tailwind
  */
 
-const API_BASE = "http://localhost:4000"; // change if backend runs elsewhere
+const API_BASE = "https://auth-tracking.onrender.com"; // change if backend runs elsewhere
 
 // ========================
 // API Client (unchanged)
@@ -1238,10 +1238,6 @@ function UserFormModal({ open, onClose, onSaved, user }) {
         <div>
           <Label>Total Investment Amount (₹) *</Label>
           <Input type="number" value={form.totalInvestmentAmount} onChange={(e) => upd("totalInvestmentAmount", e.target.value)} placeholder="0" />
-        </div>
-        <div>
-          <Label>Left Investment Amount (₹) *</Label>
-          <Input type="number" value={form.leftInvestmentAmount} onChange={(e) => upd("leftInvestmentAmount", e.target.value)} placeholder="0" />
         </div>
         <div>
           <Label>Maturity Amount (₹)</Label>
