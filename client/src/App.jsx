@@ -383,168 +383,265 @@ function UserListPage({ onLogout, onOpenUser, setSnack }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Header - Made responsive */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-white/50 shadow-lg">
+      {/* Enhanced Header with Gradient Background */}
+      <header className="sticky top-0 z-40 bg-gradient-to-r from-white/90 via-blue-50/80 to-indigo-50/80 backdrop-blur-lg border-b border-white/50 shadow-2xl">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-1 sm:p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
-                <Users className="text-white" size={20} />
+              <div className="p-2 sm:p-3 bg-gradient-to-br from-blue-600 to-purple-700 rounded-xl shadow-lg">
+                <Users className="text-white" size={24} />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                  User Management
+                <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 via-blue-700 to-indigo-700 bg-clip-text text-transparent">
+               Tracker App
                 </h1>
-                <p className="text-xs sm:text-sm text-gray-500">{users.length} total users</p>
+                
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <SecondaryButton onClick={() => setReportOpen(true)} className="text-xs sm:text-sm">
-              <Download size={16} /> <span className="hidden sm:inline">Report</span>
-            </SecondaryButton>
-            <Button onClick={() => setAddOpen(true)} className="text-xs sm:text-sm">
-              <Plus size={16} /> <span className="hidden sm:inline">Add User</span>
-            </Button>
-            <DangerButton onClick={() => { clearToken(); onLogout(); }} className="text-xs sm:text-sm">
-              <LogOut size={16} /> <span className="hidden sm:inline">Logout</span>
-            </DangerButton>
+            <button
+              onClick={() => setReportOpen(true)}
+              className="group bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-2 px-4 rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 flex items-center text-xs sm:text-sm"
+            >
+              <Download className="mr-1 sm:mr-2 h-4 w-4 group-hover:rotate-12 transition-transform duration-300" />
+              <span className="hidden sm:inline">Report</span>
+            </button>
+            <button
+              onClick={() => setAddOpen(true)}
+              className="group bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2 px-4 rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 flex items-center text-xs sm:text-sm"
+            >
+              <Plus className="mr-1 sm:mr-2 h-4 w-4 group-hover:rotate-12 transition-transform duration-300" />
+              <span className="hidden sm:inline">Add User</span>
+            </button>
+            <button
+              onClick={() => { clearToken(); onLogout(); }}
+              className="group bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-semibold py-2 px-4 rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 flex items-center text-xs sm:text-sm"
+            >
+              <LogOut className="mr-1 sm:mr-2 h-4 w-4 group-hover:rotate-12 transition-transform duration-300" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto p-4 lg:p-8">
-        {/* Search and Filters */}
-        <div className="mb-8">
-          <div className="flex flex-wrap justify-center items-center gap-3">
-            {/* Search Input */}
-            <div className="relative flex-1 min-w-[220px] max-w-[300px]">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <Input
-                placeholder="Search users by name or mobile..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-12 text-sm sm:text-base w-full"
-              />
+        {/* Enhanced Container with Beautiful Background */}
+        <div className="bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-xl shadow-2xl p-4 md:p-6 lg:p-8 text-gray-900 border border-blue-200/60 w-full mx-auto backdrop-blur-sm">
+          
+          {/* Enhanced Header Section */}
+          <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center mb-8 border-b-2 border-gradient-to-r from-blue-200 to-indigo-200 pb-6">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">All Users</h2>
+              <p className="text-gray-600 text-sm md:text-base">Manage and track user accounts</p>
             </div>
+            
+            {/* Search and Filters Row */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+              {/* Search Input */}
+              <div className="relative flex-1 sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Search users by name or mobile..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm"
+                />
+              </div>
 
-            {/* Account Type Filter */}
-            <div className="flex items-center gap-2 min-w-[160px] max-w-[200px]">
-              <label
-                htmlFor="accountTypeFilter"
-                className="text-sm font-medium text-gray-700 whitespace-nowrap"
-              >
-                Sort User
-              </label>
-              <select
-                id="accountTypeFilter"
-                value={accountTypeFilter}
-                onChange={(e) => setAccountTypeFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm w-full"
-              >
-                <option value="">All Types</option>
-                <option value="First Slot">First Slot</option>
-                <option value="Second Slot">Second Slot</option>
-              </select>
+              {/* Filter Dropdown */}
+              <div className="flex items-center space-x-3">
+                <label htmlFor="accountTypeFilter" className="text-gray-700 font-semibold whitespace-nowrap">
+                  Sort users by:
+                </label>
+                <select
+                  id="accountTypeFilter"
+                  value={accountTypeFilter}
+                  onChange={(e) => setAccountTypeFilter(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-3 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm min-w-[140px]"
+                >
+                  <option value="">All Types</option>
+                  <option value="First Slot">First Slot</option>
+                  <option value="Second Slot">Second Slot</option>
+                </select>
+              </div>
             </div>
           </div>
+
+          {/* Enhanced Loading State */}
+          {loading ? (
+            <div className="flex flex-col justify-center items-center h-64 space-y-8">
+              {/* Quantum Dot Dance Animation */}
+              <div className="relative flex items-center justify-center h-20 w-64">
+                {/* Ripple Background Effect */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-24 h-24 rounded-full bg-blue-100 opacity-10 animate-pulse"></div>
+                </div>
+
+                {/* 5 Dancing Dots */}
+                {['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFBE0B', '#A05195'].map((color, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-6 h-6 rounded-full opacity-90 animate-bounce"
+                    style={{
+                      backgroundColor: color,
+                      left: `${20 + i * 15}%`,
+                      animationDelay: `${i * 0.1}s`,
+                      filter: 'drop-shadow(0 0 6px rgba(0,0,0,0.1))',
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div className="text-center">
+                <p className="text-gray-700 font-semibold">Loading users...</p>
+                <p className="text-gray-500 text-sm">Please wait a moment</p>
+              </div>
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            /* Enhanced Empty State */
+            <div className="text-center py-12">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="h-20 w-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center shadow-inner">
+                  <Users className="h-10 w-10 text-gray-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {searchTerm ? "No users found" : "No users yet"}
+                  </h3>
+                  <p className="text-gray-500 mb-6">
+                    {searchTerm ? "Try adjusting your search terms" : "Create your first user to get started"}
+                  </p>
+                  {!searchTerm && (
+                    <button
+                      onClick={() => setAddOpen(true)}
+                      className="group bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 flex items-center"
+                    >
+                      <Plus className="mr-2 h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
+                      Add First User
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Enhanced Cards Container */
+            <div className="space-y-6">
+              {/* Mobile Stats Cards - Only show on mobile */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:hidden">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-100 text-sm font-medium">Total Users</p>
+                      <p className="text-2xl font-bold">{filteredUsers.length}</p>
+                    </div>
+                    <Users className="h-8 w-8 text-blue-200" />
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-100 text-sm font-medium">Active</p>
+                      <p className="text-2xl font-bold">{filteredUsers.length}</p>
+                    </div>
+                    <div className="h-8 w-8 bg-green-400 rounded-full flex items-center justify-center">
+                      <div className="h-3 w-3 bg-white rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Enhanced Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                {filteredUsers.map((u, index) => (
+                  <div
+                    key={u._id}
+                    className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/20 rounded-2xl shadow-xl border border-blue-200/40 p-6 group hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer backdrop-blur-sm"
+                    onClick={() => onOpenUser(u)}
+                  >
+                    {/* User Header */}
+                    <div className="flex items-center space-x-4 mb-6">
+                      <div className="h-14 w-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                        {u.firstName.charAt(0)}{u.secondName?.charAt(0) || ''}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors truncate">
+                          {u.firstName} {u.secondName}
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                          <Phone size={14} />
+                          <span className="font-mono">{u.mobileNumber}</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">User #{index + 1}</div>
+                      </div>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditUser(u); }}
+                          className="p-2 bg-gradient-to-br from-cyan-500 to-blue-600 hover:from-yellow-500 hover:to-orange-600 text-white rounded-lg shadow-sm transition-all duration-200 hover:scale-110"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(u); }}
+                          className="p-2 bg-gradient-to-br from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white rounded-lg shadow-sm transition-all duration-200 hover:scale-110"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Info Grid */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/40 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Building size={16} className="text-blue-600" />
+                          <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Account Type</span>
+                        </div>
+                        <p className="font-bold text-gray-900 text-sm">{u.accountType || "N/A"}</p>
+                      </div>
+                      <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/40 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                          <DollarSign size={16} className="text-green-600" />
+                          <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Monthly</span>
+                        </div>
+                        <p className="font-bold text-green-600 text-sm">₹{u.monthlyAmount?.toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    {/* Paid Count Section */}
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-4 border border-blue-100">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CalendarDays size={16} className="text-blue-600" />
+                          <span className="text-sm font-semibold text-gray-700">Paid Count</span>
+                        </div>
+                        <span className="text-xl font-bold text-blue-600">{u.paidCount || 0}</span>
+                      </div>
+                    </div>
+
+                    {/* View Details Button */}
+                    <div className="flex justify-between items-center border-t border-gray-100 pt-4">
+                      <div className="flex items-center text-sm text-blue-600 font-medium group-hover:text-blue-700 transition-colors">
+                        <span>Tap to view details</span>
+                        <svg className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 shadow-sm">
+                        Active
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-
-
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-blue-200 rounded-full"></div>
-              <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
-            </div>
-          </div>
-        ) : filteredUsers.length === 0 ? (
-          <Card className="p-6 sm:p-12 text-center">
-            <Users className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-600 mb-2">
-              {searchTerm ? "No users found" : "No users yet"}
-            </h3>
-            <p className="text-sm text-gray-500 mb-6">
-              {searchTerm ? "Try adjusting your search terms" : "Create your first user to get started"}
-            </p>
-            {!searchTerm && (
-              <Button onClick={() => setAddOpen(true)}>
-                <Plus size={18} /> Add First User
-              </Button>
-            )}
-          </Card>
-        ) : (
-          <>
-            {/* Card View - Always shown now */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {filteredUsers.map((u) => (
-                <Card key={u._id} className="p-4 sm:p-6 group" hover>
-                  <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
-                    <Avatar firstName={u.firstName} secondName={u.secondName} size="w-10 h-10 sm:w-14 sm:h-14" />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-base sm:text-lg text-gray-800 truncate">
-                        {u.firstName} {u.secondName}
-                      </h3>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 mt-1">
-                        <Phone size={14} />
-                        <span>{u.mobileNumber}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => setEditUser(u)}
-                        className="p-1 sm:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(u)}
-                        className="p-1 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
-                    <div className="bg-gray-50/50 rounded-lg p-2 sm:p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Building size={14} className="text-gray-500" />
-                        <span className="text-xs font-medium text-gray-500">Account Type</span>
-                      </div>
-                      <p className="font-semibold text-xs sm:text-sm">{u.accountType || "N/A"}</p>
-                    </div>
-                    <div className="bg-gray-50/50 rounded-lg p-2 sm:p-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <DollarSign size={14} className="text-gray-500" />
-                        <span className="text-xs font-medium text-gray-500">Monthly</span>
-                      </div>
-                      <p className="font-semibold text-xs sm:text-sm">₹{u.monthlyAmount}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-2 sm:p-3 mb-3 sm:mb-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs sm:text-sm font-medium text-gray-600">Paid Count</span>
-                      <span className="text-sm sm:text-lg font-bold text-blue-600">{u.paidCount}</span>
-                    </div>
-                  </div>
-
-                  <Button onClick={() => onOpenUser(u)} className="w-full text-xs sm:text-sm">
-                    <CalendarDays size={18} /> View Details
-                  </Button>
-                </Card>
-              ))}
-            </div>
-          </>
-        )}
       </main>
 
-      {/* Modals - unchanged */}
+      {/* Modals - unchanged functionality */}
       <UserFormModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
@@ -566,7 +663,6 @@ function UserListPage({ onLogout, onOpenUser, setSnack }) {
     </div>
   );
 }
-
 // ========================
 // User Details Page
 // ========================
@@ -680,7 +776,7 @@ function UserDetailsPage({ user, onBack, setSnack }) {
                   </div>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-right flex justify-center items-center gap-4">
                 <div className="text-white/80 text-xs sm:text-sm">Remaining Investment</div>
                 <div className="text-xl sm:text-3xl font-bold">₹{details.leftInvestmentAmount}</div>
               </div>
@@ -1198,7 +1294,7 @@ function InstallmentModal({ open, onClose, onSaved, installment }) {
       }
       footer={
         <>
-          <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
+         
           <Button onClick={save}>
             <SaveIcon /> Update Installment
           </Button>

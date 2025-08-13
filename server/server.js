@@ -653,9 +653,13 @@ function parseDateFlexible(s) {
   return new Date('');
 }
 
-function* monthsBetweenInclusive(start, end) {
+function* monthsBetweenInclusiveMinusOne(start, end) {
   const cur = new Date(start.getFullYear(), start.getMonth(), 1);
+
+  // Normalize and subtract one month
   const endNorm = new Date(end.getFullYear(), end.getMonth(), 1);
+  endNorm.setMonth(endNorm.getMonth() - 1);
+
   while (cur <= endNorm) {
     yield { monthName: MONTH_NAMES[cur.getMonth()], year: cur.getFullYear() };
     cur.setMonth(cur.getMonth() + 1);
@@ -860,7 +864,7 @@ app.post('/api/users/:userId/generate-installments', authMiddleware, async (req,
     }
 
     const ops = [];
-    for (const { monthName, year } of monthsBetweenInclusive(start, end)) {
+    for (const { monthName, year } of monthsBetweenInclusiveMinusOne(start, end)) {
       ops.push({
         updateOne: {
           filter: { userId: user._id, month: monthName, year },
