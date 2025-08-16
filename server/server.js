@@ -1443,6 +1443,19 @@ app.get('/api/users/:userId/report', authMiddleware, async (req, res) => {
 // ----------------------------------------
 // Start
 // ----------------------------------------
-app.get('/', (_req, res) => res.send('Installment Tracker API is running 🚀'));
-app.listen(PORT, () => console.log(`✅ Server listening on http://localhost:${PORT}`));
+app.get('/', (_req, res) => console.log('Installment Tracker API is running 🚀'));
+app.listen(PORT, () => {
+  console.log(`✅ Server listening on http://localhost:${PORT}`);
+
+  // 🌍 Global Server URL
+  const SERVER_URL = "https://auth-tracking.onrender.com";
+
+  // 🔄 Keep-alive ping every 10 seconds
+ setInterval(() => {
+  fetch(SERVER_URL)
+    .then(() => console.log("🌐 Pinged server:", SERVER_URL))
+    .catch(err => console.error("Ping failed:", err.message));
+}, 300000);
+});
+
 

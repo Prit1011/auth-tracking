@@ -394,9 +394,9 @@ function UserListPage({ onLogout, onOpenUser, setSnack }) {
               </div>
               <div>
                 <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-800 via-blue-700 to-indigo-700 bg-clip-text text-transparent">
-               Tracker App
+                  Tracker App
                 </h1>
-                
+
               </div>
             </div>
           </div>
@@ -430,14 +430,14 @@ function UserListPage({ onLogout, onOpenUser, setSnack }) {
       <main className="max-w-7xl mx-auto p-4 lg:p-8">
         {/* Enhanced Container with Beautiful Background */}
         <div className="bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 rounded-xl shadow-2xl p-4 md:p-6 lg:p-8 text-gray-900 border border-blue-200/60 w-full mx-auto backdrop-blur-sm">
-          
+
           {/* Enhanced Header Section */}
           <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center mb-8 border-b-2 border-gradient-to-r from-blue-200 to-indigo-200 pb-6">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">All Users</h2>
               <p className="text-gray-600 text-sm md:text-base">Manage and track user accounts</p>
             </div>
-            
+
             {/* Search and Filters Row */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
               {/* Search Input */}
@@ -1291,7 +1291,7 @@ function InstallmentModal({ open, onClose, onSaved, installment }) {
       }
       footer={
         <>
-         
+
           <Button onClick={save}>
             <SaveIcon /> Update Installment
           </Button>
