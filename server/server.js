@@ -1455,7 +1455,7 @@ app.listen(PORT, () => {
   fetch(SERVER_URL)
     .then(() => console.log("🌐 Pinged server:", SERVER_URL))
     .catch(err => console.error("Ping failed:", err.message));
-}, 300000);
+}, 10000);
 });
 
 
